@@ -3,10 +3,11 @@ import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 
 def main() -> None:
-    load_dotenv()
+    _ = load_dotenv()
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if api_key is None:
         raise RuntimeError("API Key not found")
@@ -17,24 +18,27 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(description="Chatbot")
-    parser.add_argument("user_prompt", type=str, help="User prompt")
+    _ = parser.add_argument("user_prompt", type=str, help="User prompt")
+    _ = parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
 
+    messages: list[ChatCompletionMessageParam] = [
+        {"role": "user", "content": args.user_prompt},
+    ]
+    
     response = client.chat.completions.create(
         model="openrouter/free",
-        messages=[
-            {
-                "role": "user",
-                "content": args.user_prompt,
-            }
-        ],
+        messages=messages,
     )
 
     if not response.usage:
         raise RuntimeError("API response appears to be malformed")
         
-    print(f"Prompt tokens: {response.usage.prompt_tokens}")
-    print(f"Response tokens: {response.usage.completion_tokens}")
+    if args.verbose:
+        print(f"User prompt: {args.user_prompt}")
+        print(f"Prompt tokens: {response.usage.prompt_tokens}")
+        print(f"Response tokens: {response.usage.completion_tokens}")
+        
     print("Response:")
     print(response.choices[0].message.content)
 
